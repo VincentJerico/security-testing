@@ -1,0 +1,37 @@
+# Dependency update policy (same across all my QA repos):
+# - minor + patch updates are grouped into one weekly PR, so routine bumps land together;
+# - major updates arrive as individual PRs, so one breaking change can't block the safe ones;
+# - every ignore rule below is deliberate and says when to lift it.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: '/'
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      prefix-development: chore
+      include: scope
+    groups:
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+    ignore:
+      # typescript-eslint supports TypeScript <6.1 — lift once it supports TypeScript 7.
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
+      # @types/node tracks the Node runtime (22 — .node-version and CI), not the newest release.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      github-actions:
+        patterns: ['*']
