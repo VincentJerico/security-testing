@@ -20,13 +20,22 @@ Needs Node 22 and Docker.
 npm install
 npm run app:start   # starts Juice Shop on http://localhost:3000
 npm test
+npm run scan:baseline   # ZAP passive scan, report in zap/report.html
 npm run app:stop
 ```
+
+## ZAP baseline scan
+
+ZAP 2.17.0 runs a passive scan of the local app over Docker's private network and writes
+`zap/report.html`. [`zap/rules.conf`](zap/rules.conf) decides what fails the build. Every rule
+that passes today is set to FAIL, so a new issue breaks CI. The 8 issues Juice Shop already has
+(for example, no Content-Security-Policy header) are set to WARN until the findings report covers
+them. Three rules are ignored: one is about the scanner itself, and two are informational.
 
 ## Roadmap
 
 1. Scaffold, target guard and CI (done)
-2. Baseline scan with OWASP ZAP
+2. Baseline scan with OWASP ZAP (done)
 3. Security header and cookie checks
 4. Access-control regression tests
 5. Dependency scanning

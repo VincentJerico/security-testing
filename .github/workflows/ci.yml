@@ -23,7 +23,7 @@ jobs:
       - run: npm run typecheck
 
   security-tests:
-    name: Security tests (local Juice Shop)
+    name: Security tests and ZAP baseline (local Juice Shop)
     needs: quality
     runs-on: ubuntu-latest
     steps:
@@ -40,6 +40,17 @@ jobs:
         with:
           name: playwright-report
           path: playwright-report/
+          retention-days: 14
+      # ZAP's container runs as its own user and writes its reports into ./zap.
+      - run: chmod a+w zap
+      - run: npm run scan:baseline
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: zap-baseline-report
+          path: |
+            zap/report.html
+            zap/report.json
           retention-days: 14
       - run: npm run app:stop
         if: ${{ always() }}
