@@ -36,7 +36,7 @@ them. Three rules are ignored: one is about the scanner itself, and two are info
 
 [`src/headers.ts`](src/headers.ts) checks response headers against a short policy and spots
 stack traces in error pages. A self-test proves it can fail: a compliant header set passes, and
-each planted defect is reported. Against Juice Shop, five findings are pinned as they are today:
+each planted defect is reported. Against Juice Shop, these findings are pinned as they are today:
 
 | ID  | Finding                                                        |
 | --- | -------------------------------------------------------------- |
@@ -45,15 +45,19 @@ each planted defect is reported. Against Juice Shop, five findings are pinned as
 | S-3 | Deprecated `Feature-Policy` only, no `Permissions-Policy`      |
 | S-4 | `Access-Control-Allow-Origin: *`, so any site can read the API |
 | S-5 | The 500 page for an unknown API route shows a stack trace      |
+| S-6 | The login `token` cookie is set without `HttpOnly`             |
+| S-7 | Order history without a login returns a 500 with a stack trace |
 
 A pinned check turns red when a finding is fixed and when a new one appears. MIME sniffing and
-clickjacking protection already work, and a test keeps them that way.
+clickjacking protection already work, and a test keeps them that way. S-6 is checked in a real
+browser after logging in through the login page with a throwaway local account, and account-only
+endpoints are checked to refuse requests that carry no token.
 
 ## Roadmap
 
 1. Scaffold, target guard and CI (done)
 2. Baseline scan with OWASP ZAP (done)
-3. Security header and error-page checks (done; cookie checks come later)
-4. Access-control regression tests
+3. Security header and error-page checks (done)
+4. Session cookie and login-required checks (done)
 5. Dependency scanning
 6. Findings report mapped to the OWASP Top 10
