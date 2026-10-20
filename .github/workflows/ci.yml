@@ -33,6 +33,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # The session-cookie test logs in through a real browser.
+      - run: npx playwright install --with-deps chromium
       - run: npm run app:start
       - run: npx playwright test
       - uses: actions/upload-artifact@v7
