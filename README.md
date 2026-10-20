@@ -32,11 +32,28 @@ that passes today is set to FAIL, so a new issue breaks CI. The 8 issues Juice S
 (for example, no Content-Security-Policy header) are set to WARN until the findings report covers
 them. Three rules are ignored: one is about the scanner itself, and two are informational.
 
+## Header and error-page checks
+
+[`src/headers.ts`](src/headers.ts) checks response headers against a short policy and spots
+stack traces in error pages. A self-test proves it can fail: a compliant header set passes, and
+each planted defect is reported. Against Juice Shop, five findings are pinned as they are today:
+
+| ID  | Finding                                                        |
+| --- | -------------------------------------------------------------- |
+| S-1 | No `Content-Security-Policy` header                            |
+| S-2 | No `Referrer-Policy` header                                    |
+| S-3 | Deprecated `Feature-Policy` only, no `Permissions-Policy`      |
+| S-4 | `Access-Control-Allow-Origin: *`, so any site can read the API |
+| S-5 | The 500 page for an unknown API route shows a stack trace      |
+
+A pinned check turns red when a finding is fixed and when a new one appears. MIME sniffing and
+clickjacking protection already work, and a test keeps them that way.
+
 ## Roadmap
 
 1. Scaffold, target guard and CI (done)
 2. Baseline scan with OWASP ZAP (done)
-3. Security header and cookie checks
+3. Security header and error-page checks (done; cookie checks come later)
 4. Access-control regression tests
 5. Dependency scanning
 6. Findings report mapped to the OWASP Top 10
