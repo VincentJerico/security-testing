@@ -3,7 +3,8 @@
 [![CI](https://github.com/VincentJerico/security-testing/actions/workflows/ci.yml/badge.svg)](https://github.com/VincentJerico/security-testing/actions/workflows/ci.yml)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-Defensive security checks a QA team can run in CI. The target is
+Defensive security checks a QA team can run in CI. The results are written up in
+[docs/FINDINGS.md](docs/FINDINGS.md). The target is
 [OWASP Juice Shop](https://owasp.org/www-project-juice-shop/), a deliberately vulnerable training
 app from OWASP, running locally in Docker.
 
@@ -71,4 +72,4 @@ endpoints are checked to refuse requests that carry no token.
 3. Security header and error-page checks (done)
 4. Session cookie and login-required checks (done)
 5. Dependency scanning (done)
-6. Findings report mapped to the OWASP Top 10
+6. Findings report mapped to the OWASP Top 10 (done): [docs/FINDINGS.md](docs/FINDINGS.md)
