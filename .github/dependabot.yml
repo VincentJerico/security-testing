@@ -25,6 +25,16 @@ updates:
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
 
+  # The scanner self-test fixture pins a vulnerable lodash on purpose (see its README).
+  # Never update it, or the Trivy self-test loses the CVE it checks for.
+  - package-ecosystem: npm
+    directory: '/fixtures/vulnerable-lockfile'
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 0
+    ignore:
+      - dependency-name: lodash
+
   - package-ecosystem: github-actions
     directory: '/'
     schedule:
