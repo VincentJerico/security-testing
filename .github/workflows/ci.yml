@@ -21,6 +21,7 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
       - run: npm run typecheck
+      - run: npm run audit:deps
 
   security-tests:
     name: Security tests and ZAP baseline (local Juice Shop)
@@ -56,3 +57,21 @@ jobs:
           retention-days: 14
       - run: npm run app:stop
         if: ${{ always() }}
+
+  dependency-scan:
+    name: Dependency scan (Trivy)
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      # Fails if the scanner misses the known CVE in the fixture; the Juice Shop scan only reports.
+      - run: npm run scan:deps
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: dependency-scan-reports
+          path: reports/
+          retention-days: 14
