@@ -53,11 +53,22 @@ clickjacking protection already work, and a test keeps them that way. S-6 is che
 browser after logging in through the login page with a throwaway local account, and account-only
 endpoints are checked to refuse requests that carry no token.
 
+## Dependency scanning
+
+- This repo's own dependencies are gated in CI with `npm audit --audit-level=high`.
+- `npm run scan:deps` scans the Juice Shop image with Trivy 0.76.0 and prints the unique CVEs by
+  severity. Juice Shop is deliberately vulnerable, and Trivy's database changes daily, so this
+  scan reports and doesn't gate. At the time of writing it found 130 unique high or critical
+  CVEs, most of them in `vm2`.
+- The same script first scans [a fixture lockfile](fixtures/vulnerable-lockfile/) that pins a
+  lodash version with a known CVE, and fails unless Trivy reports it. That proves the scan
+  actually detects known issues.
+
 ## Roadmap
 
 1. Scaffold, target guard and CI (done)
 2. Baseline scan with OWASP ZAP (done)
 3. Security header and error-page checks (done)
 4. Session cookie and login-required checks (done)
-5. Dependency scanning
+5. Dependency scanning (done)
 6. Findings report mapped to the OWASP Top 10

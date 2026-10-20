@@ -12,7 +12,9 @@
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "scan:baseline": "scripts/zap-baseline.sh"
+    "scan:baseline": "scripts/zap-baseline.sh",
+    "audit:deps": "npm audit --audit-level=high",
+    "scan:deps": "scripts/dependency-scan.sh"
   },
   "keywords": [
     "security-testing",
