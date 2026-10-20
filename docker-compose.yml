@@ -14,3 +14,13 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
+
+  # Started on demand by `npm run scan:baseline`. Scans juice-shop over the private compose network.
+  zap:
+    image: ghcr.io/zaproxy/zaproxy:2.17.0
+    profiles: ['scan']
+    depends_on:
+      juice-shop:
+        condition: service_healthy
+    volumes:
+      - ./zap:/zap/wrk:rw
