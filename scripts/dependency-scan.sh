@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Scan the Juice Shop image and the scanner self-test fixture with Trivy (pinned).
 # The image scan only reports. The fixture scan fails unless Trivy finds the known lodash CVE.
+# The image report is also converted to SARIF for GitHub code scanning (no second scan).
 set -euo pipefail
 TRIVY=aquasec/trivy:0.76.0
 mkdir -p reports .trivy-cache
@@ -12,3 +13,4 @@ node scripts/trivy-summary.mjs reports/selftest-trivy.json --expect CVE-2020-820
 run image --quiet --scanners vuln --severity HIGH,CRITICAL --format json \
   --output reports/juice-shop-trivy.json bkimminich/juice-shop:v18.0.0
 node scripts/trivy-summary.mjs reports/juice-shop-trivy.json
+run convert --format sarif --output reports/juice-shop-trivy.sarif reports/juice-shop-trivy.json

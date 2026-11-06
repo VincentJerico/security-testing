@@ -65,6 +65,21 @@ endpoints are checked to refuse requests that carry no token.
   lodash version with a known CVE, and fails unless Trivy reports it. That proves the scan
   actually detects known issues.
 
+## GitHub Security tab
+
+On every push to `main`, CI uploads both scans to GitHub code scanning, so the findings show up
+in the repo's **Security > Code scanning** view with their history, not only in zip artifacts.
+
+- Trivy's image report is converted to SARIF with `trivy convert`, under the category
+  `trivy-juice-shop`.
+- ZAP has no SARIF output, so [`scripts/zap-to-sarif.ts`](scripts/zap-to-sarif.ts) converts
+  `zap/report.json`, under the category `zap-juice-shop`. ZAP findings are about URLs, not files,
+  so each alert points at the line of [`zap/rules.conf`](zap/rules.conf) that decides whether it
+  fails the build. Informational alerts are left out. A self-test pins the conversion.
+
+These are findings in Juice Shop, the target, not in this repo's code. Pull requests convert the
+reports but don't upload them.
+
 ## Roadmap
 
 1. Scaffold, target guard and CI (done)
