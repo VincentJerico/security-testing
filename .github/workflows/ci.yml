@@ -27,6 +27,9 @@ jobs:
     name: Security tests and ZAP baseline (local Juice Shop)
     needs: quality
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # upload SARIF to code scanning
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -47,6 +50,16 @@ jobs:
       # ZAP's container runs as its own user and writes its reports into ./zap.
       - run: chmod a+w zap
       - run: npm run scan:baseline
+      - name: Convert the ZAP report to SARIF
+        if: ${{ !cancelled() && hashFiles('zap/report.json') != '' }}
+        run: node scripts/zap-to-sarif.ts zap/report.json zap/rules.conf zap/report.sarif
+      # Not on pull requests: Dependabot PRs get a read-only token, and the Security tab should
+      # show main's state.
+      - uses: github/codeql-action/upload-sarif@v4
+        if: ${{ !cancelled() && github.event_name != 'pull_request' && hashFiles('zap/report.sarif') != '' }}
+        with:
+          sarif_file: zap/report.sarif
+          category: zap-juice-shop
       - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
@@ -54,6 +67,7 @@ jobs:
           path: |
             zap/report.html
             zap/report.json
+            zap/report.sarif
           retention-days: 14
       - run: npm run app:stop
         if: ${{ always() }}
@@ -62,6 +76,9 @@ jobs:
     name: Dependency scan (Trivy)
     needs: quality
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # upload SARIF to code scanning
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -69,6 +86,11 @@ jobs:
           node-version: 22
       # Fails if the scanner misses the known CVE in the fixture; the Juice Shop scan only reports.
       - run: npm run scan:deps
+      - uses: github/codeql-action/upload-sarif@v4
+        if: ${{ !cancelled() && github.event_name != 'pull_request' && hashFiles('reports/juice-shop-trivy.sarif') != '' }}
+        with:
+          sarif_file: reports/juice-shop-trivy.sarif
+          category: trivy-juice-shop
       - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
