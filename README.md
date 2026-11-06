@@ -65,6 +65,25 @@ endpoints are checked to refuse requests that carry no token.
   lodash version with a known CVE, and fails unless Trivy reports it. That proves the scan
   actually detects known issues.
 
+## Nightly drift watch
+
+Both images are pinned, so Juice Shop and ZAP don't change between runs. What does change is
+what's known about them: Trivy's database adds new CVEs for packages Juice Shop already ships.
+[`nightly.yml`](.github/workflows/nightly.yml) re-runs every check each night and compares the
+scans with [`baseline/findings.json`](baseline/findings.json): the 130 CVE IDs and 9 ZAP alerts
+from the scan on 2026-11-06.
+
+- A new CVE or ZAP alert, or a pinned test that fails, fails the run and opens one issue labelled
+  `security-drift`, or comments on it if one is already open. The issue links each new CVE.
+- The next clean run comments on that issue and closes it.
+- A finding that disappears is listed but doesn't fail the run. Update the baseline in a PR with
+  `npm run scan:deps && npm run scan:baseline && npm run baseline:update`.
+
+Self-tests pin both halves: [`drift.selftest.spec.ts`](tests/drift.selftest.spec.ts) plants a
+new CVE and a new ZAP alert and expects the check to exit 1, and
+[`drift-issue.selftest.spec.ts`](tests/drift-issue.selftest.spec.ts) runs the issue script with a
+fake `gh` for each case.
+
 ## Roadmap
 
 1. Scaffold, target guard and CI (done)
