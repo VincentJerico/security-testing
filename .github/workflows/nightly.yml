@@ -1,0 +1,83 @@
+name: Nightly drift watch
+
+# The images are pinned, so Juice Shop and ZAP don't change between runs. The outside world does:
+# Trivy's database learns about new CVEs, and the runner image moves on. This re-runs every check
+# each night and compares the scan results with baseline/findings.json.
+# New findings or a failing pinned test open (or update) one issue labelled security-drift. A clean
+# run comments on that issue and closes it.
+
+on:
+  schedule:
+    - cron: '30 19 * * *' # 03:30 Philippine time, after performance-testing's nightly run
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-drift
+  cancel-in-progress: false
+
+jobs:
+  drift:
+    name: Scan and compare with the baseline
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      LABEL: security-drift
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run app:start
+
+      # The checks below may fail; the report step decides the outcome once they've all run.
+      - name: Pinned security tests
+        id: tests
+        continue-on-error: true
+        run: npx playwright test
+      - name: ZAP baseline
+        id: zap
+        continue-on-error: true
+        run: |
+          chmod a+w zap
+          npm run scan:baseline
+      - name: Trivy dependency scan
+        id: trivy
+        continue-on-error: true
+        run: npm run scan:deps
+      - name: Compare with the baseline
+        id: drift
+        continue-on-error: true
+        run: npm run drift:check -- --report drift.md
+
+      - name: Open, update or close the drift issue
+        if: ${{ !cancelled() }}
+        env:
+          TESTS: ${{ steps.tests.outcome }}
+          ZAP: ${{ steps.zap.outcome }}
+          TRIVY: ${{ steps.trivy.outcome }}
+          DRIFT: ${{ steps.drift.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: scripts/drift-issue.sh
+
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: nightly-drift-reports
+          path: |
+            drift.md
+            playwright-report/
+            zap/report.html
+            zap/report.json
+            reports/
+          retention-days: 14
+      - run: npm run app:stop
+        if: ${{ always() }}

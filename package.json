@@ -14,7 +14,9 @@
     "format:check": "prettier --check .",
     "scan:baseline": "scripts/zap-baseline.sh",
     "audit:deps": "npm audit --audit-level=high",
-    "scan:deps": "scripts/dependency-scan.sh"
+    "scan:deps": "scripts/dependency-scan.sh",
+    "drift:check": "node scripts/drift.ts check reports/juice-shop-trivy.json zap/report.json",
+    "baseline:update": "node scripts/drift.ts update reports/juice-shop-trivy.json zap/report.json"
   },
   "keywords": [
     "security-testing",
