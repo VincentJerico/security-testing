@@ -1,0 +1,5 @@
+{
+  "routes": ["/", "/rest/products/search?q=apple", "/api/Products/1"],
+  "probe": "/api/DoesNotExist",
+  "accepted": []
+}

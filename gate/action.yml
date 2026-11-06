@@ -1,0 +1,66 @@
+name: Security gate
+description: >
+  Security checks for a web app running on localhost in the calling job: response headers,
+  stack traces on error pages, and an optional ZAP passive scan. Fails on findings the caller's
+  policy doesn't accept and on accepted findings that no longer happen.
+
+inputs:
+  policy:
+    description: Path to the policy JSON in the calling repo (routes, probe, accepted findings).
+    required: true
+  target-url:
+    description: Where the app is listening. Only localhost addresses are allowed.
+    default: http://localhost:3000
+  zap-rules:
+    description: >
+      Path to a ZAP rules.conf in the calling repo. With it, ZAP's passive baseline runs and any
+      FAIL rule fails the gate. Leave empty to skip ZAP.
+    default: ''
+  report-dir:
+    description: Directory (in the workspace) for the gate's reports.
+    default: security-gate-report
+
+runs:
+  using: composite
+  steps:
+    # Node 22 in a container, so the gate doesn't change the Node version of the calling job.
+    - name: Header and error-page checks
+      shell: bash
+      env:
+        GATE_DIR: ${{ github.action_path }}
+        POLICY: ${{ inputs.policy }}
+        TARGET_URL: ${{ inputs.target-url }}
+        REPORT_DIR: ${{ inputs.report-dir }}
+      run: |
+        mkdir -p "$REPORT_DIR"
+        docker run --rm --network host \
+          -v "$GATE_DIR/..:/gate:ro" -v "$GITHUB_WORKSPACE:/work" -w /work \
+          -e TARGET_URL node:22.23.4-slim \
+          node /gate/gate/check.ts "$POLICY" "$REPORT_DIR/gate.json"
+
+    - name: ZAP passive baseline
+      if: ${{ inputs.zap-rules != '' }}
+      shell: bash
+      env:
+        RULES: ${{ inputs.zap-rules }}
+        TARGET_URL: ${{ inputs.target-url }}
+        REPORT_DIR: ${{ inputs.report-dir }}
+      run: |
+        mkdir -p "$REPORT_DIR/zap"
+        cp "$RULES" "$REPORT_DIR/zap/rules.conf"
+        chmod -R a+w "$REPORT_DIR/zap"
+        set +e
+        docker run --rm --network host -v "$GITHUB_WORKSPACE/$REPORT_DIR/zap:/zap/wrk:rw" \
+          ghcr.io/zaproxy/zaproxy:2.17.0 zap-baseline.py -t "$TARGET_URL" \
+          -c rules.conf -r report.html -J report.json
+        code=$?
+        set -e
+        if [ ! -s "$REPORT_DIR/zap/report.json" ]; then
+          echo "::error::ZAP baseline: scan error, no report.json was written (exit $code)"
+          exit 3
+        fi
+        case $code in
+          0 | 2) echo "ZAP baseline: no FAIL rule triggered (exit $code)" ;;
+          1) echo "::error::ZAP baseline: a FAIL rule triggered, see $REPORT_DIR/zap/report.html"; exit 1 ;;
+          *) echo "::error::ZAP baseline: scan error (exit $code)"; exit "$code" ;;
+        esac

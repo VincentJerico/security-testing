@@ -75,3 +75,41 @@ jobs:
           name: dependency-scan-reports
           path: reports/
           retention-days: 14
+
+  # Uses the gate the way another repo would: app started in this job, then the composite action.
+  gate-selftest:
+    name: Security gate self-test (Juice Shop)
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker compose up -d --wait
+      - name: Gate passes with the Juice Shop policy (S-1 to S-5 accepted) and ZAP rules
+        uses: ./gate
+        with:
+          policy: gate/examples/juice-shop.policy.json
+          zap-rules: zap/rules.conf
+      - name: Gate run that accepts nothing (expected to fail)
+        id: must-fail
+        continue-on-error: true
+        uses: ./gate
+        with:
+          policy: tests/fixtures/gate-accepts-nothing.policy.json
+          report-dir: security-gate-report/must-fail
+      - name: Check the gate failed
+        env:
+          OUTCOME: ${{ steps.must-fail.outcome }}
+        run: |
+          if [ "$OUTCOME" != failure ]; then
+            echo "::error::The gate passed with a policy that accepts nothing, so it can't fail."
+            exit 1
+          fi
+          echo "The gate failed as expected: $(jq -r '.unexpected | length' security-gate-report/must-fail/gate.json) unaccepted findings."
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: security-gate-report
+          path: security-gate-report/
+          retention-days: 14
+      - run: docker compose down
+        if: ${{ always() }}
