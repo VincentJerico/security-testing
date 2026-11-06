@@ -65,6 +65,31 @@ endpoints are checked to refuse requests that carry no token.
   lodash version with a known CVE, and fails unless Trivy reports it. That proves the scan
   actually detects known issues.
 
+## Reusable security gate
+
+The header and error-page checks also work as a composite action for other repos. The calling job
+starts its own app on localhost, then runs the gate against it:
+
+```yaml
+- run: npm start & # however the app starts; it must listen on localhost
+- uses: VincentJerico/security-testing/gate@<commit sha>
+  with:
+    policy: .github/security-gate.json
+    target-url: http://localhost:3000
+    zap-rules: zap/rules.conf # optional: also run ZAP's passive baseline
+```
+
+The policy lists the routes to check, an unknown route to probe for stack traces, and the
+findings the repo has accepted for now, each with a reason
+([example](gate/examples/juice-shop.policy.json)). Like the pinned tests here, the gate fails on a
+finding nobody accepted and on an accepted finding that no longer happens, so the policy can't go
+stale. It refuses any target that isn't localhost, and it runs its checks in a `node:22`
+container, so it doesn't change the calling job's Node version.
+
+CI runs the gate against Juice Shop twice: with [its policy](gate/examples/juice-shop.policy.json)
+(S-1 to S-5 accepted, plus the ZAP rules) it must pass, and with a policy that accepts nothing it
+must fail. [`gate.selftest.spec.ts`](tests/gate.selftest.spec.ts) pins the policy logic.
+
 ## Roadmap
 
 1. Scaffold, target guard and CI (done)

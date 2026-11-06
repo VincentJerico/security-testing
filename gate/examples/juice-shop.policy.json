@@ -1,0 +1,31 @@
+{
+  "routes": ["/", "/rest/products/search?q=apple", "/api/Products/1"],
+  "probe": "/api/DoesNotExist",
+  "accepted": [
+    {
+      "route": "*",
+      "problem": "Content-Security-Policy is missing",
+      "reason": "S-1 in docs/FINDINGS.md; Juice Shop is deliberately vulnerable"
+    },
+    {
+      "route": "*",
+      "problem": "Referrer-Policy is missing",
+      "reason": "S-2 in docs/FINDINGS.md"
+    },
+    {
+      "route": "*",
+      "problem": "Permissions-Policy is missing",
+      "reason": "S-3 in docs/FINDINGS.md (Juice Shop sends the deprecated Feature-Policy)"
+    },
+    {
+      "route": "*",
+      "problem": "Access-Control-Allow-Origin is \"*\", so any site can read responses",
+      "reason": "S-4 in docs/FINDINGS.md"
+    },
+    {
+      "route": "/api/DoesNotExist",
+      "problem": "error response shows a stack trace or internal file paths",
+      "reason": "S-5 in docs/FINDINGS.md"
+    }
+  ]
+}
